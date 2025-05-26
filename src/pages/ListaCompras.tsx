@@ -1,40 +1,73 @@
 
-import { useState, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { PageLayout } from '@/components/layout/PageLayout';
 import { CadastroCompraModal } from '@/components/modals/CadastroCompraModal';
-import { storage } from '@/utils/storage';
 import { formatCurrency, formatDate } from '@/utils/formatters';
 import { Plus, Search, ShoppingCart } from 'lucide-react';
-import { Compra } from '@/types';
+import { compraService } from '@/services/supabaseService';
+import type { CompraComCliente } from '@/types/supabase';
+import { toast } from '@/hooks/use-toast';
 
 export default function ListaCompras() {
   const [searchTerm, setSearchTerm] = useState('');
   const [modalOpen, setModalOpen] = useState(false);
-  const [compras, setCompras] = useState<Compra[]>(
-    storage.getCompras().sort((a, b) => 
-      new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-    )
-  );
+  const [compras, setCompras] = useState<CompraComCliente[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const filteredCompras = useMemo(() => {
-    if (!searchTerm) return compras;
-    
-    const term = searchTerm.toLowerCase();
-    return compras.filter(compra => 
-      compra.clienteNome.toLowerCase().includes(term) ||
-      compra.formaPagamento.toLowerCase().includes(term) ||
-      formatCurrency(compra.valorTotal).toLowerCase().includes(term)
-    );
-  }, [compras, searchTerm]);
+  useEffect(() => {
+    loadCompras();
+  }, []);
 
-  const handleCompraSalva = (novaCompra: Compra) => {
-    setCompras(storage.getCompras().sort((a, b) => 
-      new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-    ));
+  const loadCompras = async () => {
+    try {
+      setIsLoading(true);
+      const comprasData = await compraService.getAll();
+      setCompras(comprasData);
+    } catch (error: any) {
+      console.error('Erro ao carregar compras:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao carregar lista de compras",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const searchCompras = async (term: string) => {
+    if (!term.trim()) {
+      loadCompras();
+      return;
+    }
+
+    try {
+      const comprasData = await compraService.search(term);
+      setCompras(comprasData);
+    } catch (error: any) {
+      console.error('Erro ao buscar compras:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao buscar compras",
+        variant: "destructive",
+      });
+    }
+  };
+
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      searchCompras(searchTerm);
+    }, 300);
+
+    return () => clearTimeout(timeoutId);
+  }, [searchTerm]);
+
+  const handleCompraSalva = (novaCompra: CompraComCliente) => {
+    loadCompras(); // Recarrega a lista para garantir dados atualizados
   };
 
   const getFormaPagamentoBadge = (forma: string) => {
@@ -46,6 +79,19 @@ export default function ListaCompras() {
     
     return variants[forma] || { variant: "outline", label: forma };
   };
+
+  if (isLoading) {
+    return (
+      <PageLayout 
+        title="Lista de Compras" 
+        subtitle="Carregando..."
+      >
+        <div className="flex items-center justify-center py-12">
+          <div className="text-muted-foreground">Carregando compras...</div>
+        </div>
+      </PageLayout>
+    );
+  }
 
   return (
     <PageLayout 
@@ -83,7 +129,7 @@ export default function ListaCompras() {
           </CardContent>
         </Card>
 
-        {filteredCompras.length === 0 ? (
+        {compras.length === 0 ? (
           <Card>
             <CardContent className="flex flex-col items-center justify-center py-12">
               <ShoppingCart className="h-12 w-12 text-muted-foreground mb-4" />
@@ -106,8 +152,8 @@ export default function ListaCompras() {
           </Card>
         ) : (
           <div className="grid gap-4">
-            {filteredCompras.map((compra) => {
-              const formaPagamento = getFormaPagamentoBadge(compra.formaPagamento);
+            {compras.map((compra) => {
+              const formaPagamento = getFormaPagamentoBadge(compra.forma_pagamento);
               
               return (
                 <Card key={compra.id} className="hover:shadow-md transition-shadow">
@@ -115,21 +161,17 @@ export default function ListaCompras() {
                     <div className="flex items-start justify-between">
                       <div className="space-y-3 flex-1">
                         <div className="flex items-center gap-3 flex-wrap">
-                          <h3 className="text-lg font-semibold">{compra.clienteNome}</h3>
+                          <h3 className="text-lg font-semibold">{compra.nome_cliente}</h3>
                           <Badge variant={formaPagamento.variant}>
                             {formaPagamento.label}
                           </Badge>
                           <Badge variant="secondary">
-                            {formatDate(compra.data)}
+                            {formatDate(new Date(compra.data))}
                           </Badge>
                         </div>
                         
                         <div className="text-2xl font-bold text-green-600">
-                          {formatCurrency(compra.valorTotal)}
-                        </div>
-                        
-                        <div className="text-sm text-muted-foreground">
-                          <span className="font-medium">Registrado em:</span> {formatDate(compra.createdAt)}
+                          {formatCurrency(compra.valor_total)}
                         </div>
                       </div>
                     </div>
@@ -140,9 +182,9 @@ export default function ListaCompras() {
           </div>
         )}
 
-        {searchTerm && filteredCompras.length > 0 && (
+        {searchTerm && compras.length > 0 && (
           <div className="text-center text-sm text-muted-foreground">
-            Mostrando {filteredCompras.length} de {compras.length} compra(s)
+            Mostrando {compras.length} resultado(s) para "{searchTerm}"
           </div>
         )}
       </div>

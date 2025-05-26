@@ -1,35 +1,87 @@
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { PageLayout } from '@/components/layout/PageLayout';
 import { CadastroClienteModal } from '@/components/modals/CadastroClienteModal';
-import { storage } from '@/utils/storage';
 import { formatDate } from '@/utils/formatters';
 import { UserPlus, Search, Users } from 'lucide-react';
-import { Cliente } from '@/types';
+import { clienteService } from '@/services/supabaseService';
+import type { SupabaseCliente } from '@/types/supabase';
+import { toast } from '@/hooks/use-toast';
 
 export default function ListaClientes() {
   const [searchTerm, setSearchTerm] = useState('');
   const [modalOpen, setModalOpen] = useState(false);
-  const [clientes, setClientes] = useState<Cliente[]>(storage.getClientes());
+  const [clientes, setClientes] = useState<SupabaseCliente[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const filteredClientes = useMemo(() => {
-    if (!searchTerm) return clientes;
-    
-    const term = searchTerm.toLowerCase();
-    return clientes.filter(cliente => 
-      cliente.nome.toLowerCase().includes(term) ||
-      cliente.cpf.includes(term) ||
-      cliente.telefone.includes(term)
-    );
-  }, [clientes, searchTerm]);
+  useEffect(() => {
+    loadClientes();
+  }, []);
 
-  const handleClienteSalvo = (novoCliente: Cliente) => {
-    setClientes(storage.getClientes());
+  const loadClientes = async () => {
+    try {
+      setIsLoading(true);
+      const clientesData = await clienteService.getAll();
+      setClientes(clientesData);
+    } catch (error: any) {
+      console.error('Erro ao carregar clientes:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao carregar lista de clientes",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
+
+  const searchClientes = async (term: string) => {
+    if (!term.trim()) {
+      loadClientes();
+      return;
+    }
+
+    try {
+      const clientesData = await clienteService.search(term);
+      setClientes(clientesData);
+    } catch (error: any) {
+      console.error('Erro ao buscar clientes:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao buscar clientes",
+        variant: "destructive",
+      });
+    }
+  };
+
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      searchClientes(searchTerm);
+    }, 300);
+
+    return () => clearTimeout(timeoutId);
+  }, [searchTerm]);
+
+  const handleClienteSalvo = (novoCliente: SupabaseCliente) => {
+    setClientes(prev => [novoCliente, ...prev]);
+  };
+
+  if (isLoading) {
+    return (
+      <PageLayout 
+        title="Lista de Clientes" 
+        subtitle="Carregando..."
+      >
+        <div className="flex items-center justify-center py-12">
+          <div className="text-muted-foreground">Carregando clientes...</div>
+        </div>
+      </PageLayout>
+    );
+  }
 
   return (
     <PageLayout 
@@ -67,7 +119,7 @@ export default function ListaClientes() {
           </CardContent>
         </Card>
 
-        {filteredClientes.length === 0 ? (
+        {clientes.length === 0 ? (
           <Card>
             <CardContent className="flex flex-col items-center justify-center py-12">
               <Users className="h-12 w-12 text-muted-foreground mb-4" />
@@ -90,7 +142,7 @@ export default function ListaClientes() {
           </Card>
         ) : (
           <div className="grid gap-4">
-            {filteredClientes.map((cliente) => (
+            {clientes.map((cliente) => (
               <Card key={cliente.id} className="hover:shadow-md transition-shadow">
                 <CardContent className="p-6">
                   <div className="flex items-start justify-between">
@@ -106,9 +158,6 @@ export default function ListaClientes() {
                         <div>
                           <span className="font-medium">Telefone:</span> {cliente.telefone}
                         </div>
-                        <div className="md:col-span-2">
-                          <span className="font-medium">Cadastrado em:</span> {formatDate(cliente.createdAt)}
-                        </div>
                       </div>
                     </div>
                   </div>
@@ -118,9 +167,9 @@ export default function ListaClientes() {
           </div>
         )}
 
-        {searchTerm && filteredClientes.length > 0 && (
+        {searchTerm && clientes.length > 0 && (
           <div className="text-center text-sm text-muted-foreground">
-            Mostrando {filteredClientes.length} de {clientes.length} cliente(s)
+            Mostrando {clientes.length} resultado(s) para "{searchTerm}"
           </div>
         )}
       </div>

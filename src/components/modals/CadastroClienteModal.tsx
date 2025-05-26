@@ -5,14 +5,14 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from '@/hooks/use-toast';
-import { storage } from '@/utils/storage';
 import { formatCPF, formatTelefone } from '@/utils/formatters';
-import { Cliente } from '@/types';
+import { clienteService } from '@/services/supabaseService';
+import type { SupabaseCliente } from '@/types/supabase';
 
 interface CadastroClienteModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onClienteSalvo: (cliente: Cliente) => void;
+  onClienteSalvo: (cliente: SupabaseCliente) => void;
 }
 
 export function CadastroClienteModal({ open, onOpenChange, onClienteSalvo }: CadastroClienteModalProps) {
@@ -68,24 +68,8 @@ export function CadastroClienteModal({ open, onOpenChange, onClienteSalvo }: Cad
         return;
       }
 
-      // Verificar se CPF já existe
-      const clientes = storage.getClientes();
-      const cpfNumeros = formData.cpf.replace(/\D/g, '');
-      const clienteExistente = clientes.find(cliente => 
-        cliente.cpf.replace(/\D/g, '') === cpfNumeros
-      );
-
-      if (clienteExistente) {
-        toast({
-          title: "Cliente já cadastrado",
-          description: "Já existe um cliente com este CPF",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      // Salvar cliente
-      const novoCliente = storage.saveCliente({
+      // Salvar cliente no Supabase
+      const novoCliente = await clienteService.create({
         nome: formData.nome.trim(),
         cpf: formData.cpf,
         telefone: formData.telefone,
@@ -102,10 +86,11 @@ export function CadastroClienteModal({ open, onOpenChange, onClienteSalvo }: Cad
       // Limpar formulário e fechar modal
       setFormData({ nome: '', cpf: '', telefone: '' });
       onOpenChange(false);
-    } catch (error) {
+    } catch (error: any) {
+      console.error('Erro ao salvar cliente:', error);
       toast({
         title: "Erro ao salvar cliente",
-        description: "Tente novamente em alguns instantes",
+        description: error.message || "Tente novamente em alguns instantes",
         variant: "destructive",
       });
     } finally {

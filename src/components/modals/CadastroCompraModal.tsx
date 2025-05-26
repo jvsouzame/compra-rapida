@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -10,16 +10,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { toast } from '@/hooks/use-toast';
-import { storage } from '@/utils/storage';
 import { formatCurrency, parseCurrency } from '@/utils/formatters';
 import { cn } from '@/lib/utils';
 import { CalendarIcon } from 'lucide-react';
-import { Compra } from '@/types';
+import { clienteService, compraService } from '@/services/supabaseService';
+import type { SupabaseCliente, CompraComCliente } from '@/types/supabase';
 
 interface CadastroCompraModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onCompraSalva: (compra: Compra) => void;
+  onCompraSalva: (compra: CompraComCliente) => void;
 }
 
 export function CadastroCompraModal({ open, onOpenChange, onCompraSalva }: CadastroCompraModalProps) {
@@ -30,8 +30,31 @@ export function CadastroCompraModal({ open, onOpenChange, onCompraSalva }: Cadas
     clienteId: '',
   });
   const [isLoading, setIsLoading] = useState(false);
+  const [clientes, setClientes] = useState<SupabaseCliente[]>([]);
+  const [loadingClientes, setLoadingClientes] = useState(false);
 
-  const clientes = storage.getClientes();
+  useEffect(() => {
+    if (open) {
+      loadClientes();
+    }
+  }, [open]);
+
+  const loadClientes = async () => {
+    setLoadingClientes(true);
+    try {
+      const clientesData = await clienteService.getAll();
+      setClientes(clientesData);
+    } catch (error) {
+      console.error('Erro ao carregar clientes:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao carregar lista de clientes",
+        variant: "destructive",
+      });
+    } finally {
+      setLoadingClientes(false);
+    }
+  };
 
   const handleCurrencyChange = (value: string) => {
     // Remove tudo exceto números e vírgula
@@ -87,6 +110,7 @@ export function CadastroCompraModal({ open, onOpenChange, onCompraSalva }: Cadas
         return;
       }
 
+      // Verificar se cliente existe
       const cliente = clientes.find(c => c.id === formData.clienteId);
       if (!cliente) {
         toast({
@@ -97,13 +121,12 @@ export function CadastroCompraModal({ open, onOpenChange, onCompraSalva }: Cadas
         return;
       }
 
-      // Salvar compra
-      const novaCompra = storage.saveCompra({
-        data: formData.data,
-        valorTotal: valorNumerico,
-        formaPagamento: formData.formaPagamento as any,
-        clienteId: formData.clienteId,
-        clienteNome: cliente.nome,
+      // Salvar compra no Supabase
+      await compraService.create({
+        data: format(formData.data, 'yyyy-MM-dd'),
+        valor_total: valorNumerico,
+        forma_pagamento: formData.formaPagamento,
+        cliente_id: formData.clienteId,
       });
 
       toast({
@@ -111,8 +134,18 @@ export function CadastroCompraModal({ open, onOpenChange, onCompraSalva }: Cadas
         description: `Venda de ${formatCurrency(valorNumerico)} foi registrada`,
       });
 
+      // Criar objeto com nome do cliente para callback
+      const compraComCliente: CompraComCliente = {
+        id: '', // Será preenchido pela query
+        data: format(formData.data, 'yyyy-MM-dd'),
+        valor_total: valorNumerico,
+        forma_pagamento: formData.formaPagamento,
+        cliente_id: formData.clienteId,
+        nome_cliente: cliente.nome,
+      };
+
       // Chamar callback para atualizar lista
-      onCompraSalva(novaCompra);
+      onCompraSalva(compraComCliente);
 
       // Limpar formulário e fechar modal
       setFormData({
@@ -122,10 +155,11 @@ export function CadastroCompraModal({ open, onOpenChange, onCompraSalva }: Cadas
         clienteId: '',
       });
       onOpenChange(false);
-    } catch (error) {
+    } catch (error: any) {
+      console.error('Erro ao registrar compra:', error);
       toast({
         title: "Erro ao registrar compra",
-        description: "Tente novamente em alguns instantes",
+        description: error.message || "Tente novamente em alguns instantes",
         variant: "destructive",
       });
     } finally {
@@ -209,9 +243,10 @@ export function CadastroCompraModal({ open, onOpenChange, onCompraSalva }: Cadas
             <Select 
               value={formData.clienteId} 
               onValueChange={(value) => setFormData(prev => ({ ...prev, clienteId: value }))}
+              disabled={loadingClientes}
             >
               <SelectTrigger>
-                <SelectValue placeholder="Selecione o cliente" />
+                <SelectValue placeholder={loadingClientes ? "Carregando..." : "Selecione o cliente"} />
               </SelectTrigger>
               <SelectContent>
                 {clientes.map((cliente) => (
@@ -221,7 +256,7 @@ export function CadastroCompraModal({ open, onOpenChange, onCompraSalva }: Cadas
                 ))}
               </SelectContent>
             </Select>
-            {clientes.length === 0 && (
+            {clientes.length === 0 && !loadingClientes && (
               <p className="text-sm text-muted-foreground">
                 Nenhum cliente cadastrado. Cadastre um cliente primeiro.
               </p>
@@ -239,7 +274,7 @@ export function CadastroCompraModal({ open, onOpenChange, onCompraSalva }: Cadas
             </Button>
             <Button 
               type="submit" 
-              disabled={isLoading || clientes.length === 0}
+              disabled={isLoading || clientes.length === 0 || loadingClientes}
               className="flex-1"
             >
               {isLoading ? 'Salvando...' : 'Salvar'}

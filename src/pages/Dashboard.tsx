@@ -3,27 +3,60 @@ import { Users, ShoppingCart, DollarSign, TrendingUp } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { PageLayout } from '@/components/layout/PageLayout';
-import { storage } from '@/utils/storage';
 import { formatCurrency } from '@/utils/formatters';
-import { useMemo } from 'react';
+import { useEffect, useState } from 'react';
+import { compraService } from '@/services/supabaseService';
+import { toast } from '@/hooks/use-toast';
+
+interface Stats {
+  totalClientes: number;
+  totalCompras: number;
+  faturamentoTotal: number;
+  ticketMedio: number;
+}
 
 export default function Dashboard() {
-  const stats = useMemo(() => {
-    const clientes = storage.getClientes();
-    const compras = storage.getCompras();
-    
-    const totalClientes = clientes.length;
-    const totalCompras = compras.length;
-    const faturamentoTotal = compras.reduce((acc, compra) => acc + compra.valorTotal, 0);
-    const ticketMedio = totalCompras > 0 ? faturamentoTotal / totalCompras : 0;
+  const [stats, setStats] = useState<Stats>({
+    totalClientes: 0,
+    totalCompras: 0,
+    faturamentoTotal: 0,
+    ticketMedio: 0,
+  });
+  const [isLoading, setIsLoading] = useState(true);
 
-    return {
-      totalClientes,
-      totalCompras,
-      faturamentoTotal,
-      ticketMedio,
-    };
+  useEffect(() => {
+    loadStats();
   }, []);
+
+  const loadStats = async () => {
+    try {
+      setIsLoading(true);
+      const statsData = await compraService.getStats();
+      setStats(statsData);
+    } catch (error: any) {
+      console.error('Erro ao carregar estatísticas:', error);
+      toast({
+        title: "Erro",
+        description: "Erro ao carregar estatísticas do dashboard",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <PageLayout 
+        title="Dashboard" 
+        subtitle="Carregando estatísticas..."
+      >
+        <div className="flex items-center justify-center py-12">
+          <div className="text-muted-foreground">Carregando dashboard...</div>
+        </div>
+      </PageLayout>
+    );
+  }
 
   return (
     <PageLayout 
@@ -92,15 +125,15 @@ export default function Dashboard() {
           </CardHeader>
           <CardContent className="space-y-4">
             <Button asChild className="w-full justify-start" size="lg">
-              <a href="/clientes/novo">
+              <a href="/clientes">
                 <Users className="mr-2 h-4 w-4" />
-                Cadastrar Novo Cliente
+                Ver Lista de Clientes
               </a>
             </Button>
             <Button asChild className="w-full justify-start" size="lg" variant="outline">
-              <a href="/compras/nova">
+              <a href="/compras">
                 <ShoppingCart className="mr-2 h-4 w-4" />
-                Registrar Nova Compra
+                Ver Lista de Compras
               </a>
             </Button>
           </CardContent>
