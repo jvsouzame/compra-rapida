@@ -24,6 +24,40 @@ export const clienteService = {
     return data;
   },
 
+  async update(id: string, cliente: Partial<Omit<SupabaseCliente, 'id'>>): Promise<SupabaseCliente> {
+    const { data, error } = await supabase
+      .from('clientes')
+      .update(cliente)
+      .eq('id', id)
+      .select()
+      .single();
+    
+    if (error) throw error;
+    return data;
+  },
+
+  async delete(id: string): Promise<void> {
+    // Primeiro verifica se há compras associadas
+    const { data: compras, error: comprasError } = await supabase
+      .from('compras')
+      .select('id')
+      .eq('cliente_id', id)
+      .limit(1);
+    
+    if (comprasError) throw comprasError;
+    
+    if (compras && compras.length > 0) {
+      throw new Error('Não é possível excluir este cliente pois existem compras associadas a ele.');
+    }
+
+    const { error } = await supabase
+      .from('clientes')
+      .delete()
+      .eq('id', id);
+    
+    if (error) throw error;
+  },
+
   async search(term: string): Promise<SupabaseCliente[]> {
     const { data, error } = await supabase
       .from('clientes')
@@ -71,6 +105,27 @@ export const compraService = {
     
     if (error) throw error;
     return data;
+  },
+
+  async update(id: string, compra: Partial<Omit<SupabaseCompra, 'id'>>): Promise<SupabaseCompra> {
+    const { data, error } = await supabase
+      .from('compras')
+      .update(compra)
+      .eq('id', id)
+      .select()
+      .single();
+    
+    if (error) throw error;
+    return data;
+  },
+
+  async delete(id: string): Promise<void> {
+    const { error } = await supabase
+      .from('compras')
+      .delete()
+      .eq('id', id);
+    
+    if (error) throw error;
   },
 
   async search(term: string): Promise<CompraComCliente[]> {

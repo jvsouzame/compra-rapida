@@ -6,8 +6,10 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { PageLayout } from '@/components/layout/PageLayout';
 import { CadastroCompraModal } from '@/components/modals/CadastroCompraModal';
+import { EditarCompraModal } from '@/components/modals/EditarCompraModal';
+import { ConfirmarExclusaoModal } from '@/components/modals/ConfirmarExclusaoModal';
 import { formatCurrency, formatDate } from '@/utils/formatters';
-import { Plus, Search, ShoppingCart } from 'lucide-react';
+import { Plus, Search, ShoppingCart, Edit, Trash2 } from 'lucide-react';
 import { compraService } from '@/services/supabaseService';
 import type { CompraComCliente } from '@/types/supabase';
 import { toast } from '@/hooks/use-toast';
@@ -15,6 +17,9 @@ import { toast } from '@/hooks/use-toast';
 export default function ListaCompras() {
   const [searchTerm, setSearchTerm] = useState('');
   const [modalOpen, setModalOpen] = useState(false);
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [selectedCompra, setSelectedCompra] = useState<CompraComCliente | null>(null);
   const [compras, setCompras] = useState<CompraComCliente[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -67,7 +72,43 @@ export default function ListaCompras() {
   }, [searchTerm]);
 
   const handleCompraSalva = (novaCompra: CompraComCliente) => {
-    loadCompras(); // Recarrega a lista para garantir dados atualizados
+    loadCompras();
+  };
+
+  const handleEditarCompra = (compra: CompraComCliente) => {
+    setSelectedCompra(compra);
+    setEditModalOpen(true);
+  };
+
+  const handleExcluirCompra = (compra: CompraComCliente) => {
+    setSelectedCompra(compra);
+    setDeleteModalOpen(true);
+  };
+
+  const handleCompraAtualizada = () => {
+    loadCompras();
+    setEditModalOpen(false);
+    setSelectedCompra(null);
+  };
+
+  const handleConfirmarExclusao = async () => {
+    if (!selectedCompra) return;
+
+    try {
+      await compraService.delete(selectedCompra.id);
+      toast({
+        title: "Compra excluída com sucesso ✅",
+        description: "A compra foi excluída com sucesso",
+      });
+      loadCompras();
+    } catch (error: any) {
+      console.error('Erro ao excluir compra:', error);
+      toast({
+        title: "Erro ao excluir compra",
+        description: error.message || "Tente novamente em alguns instantes",
+        variant: "destructive",
+      });
+    }
   };
 
   const getFormaPagamentoBadge = (forma: string) => {
@@ -174,6 +215,23 @@ export default function ListaCompras() {
                           {formatCurrency(compra.valor_total)}
                         </div>
                       </div>
+                      <div className="flex gap-2 ml-4">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleEditarCompra(compra)}
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleExcluirCompra(compra)}
+                          className="text-red-600 hover:text-red-700 hover:border-red-300"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
@@ -193,6 +251,21 @@ export default function ListaCompras() {
         open={modalOpen}
         onOpenChange={setModalOpen}
         onCompraSalva={handleCompraSalva}
+      />
+
+      <EditarCompraModal
+        open={editModalOpen}
+        onOpenChange={setEditModalOpen}
+        compra={selectedCompra}
+        onCompraAtualizada={handleCompraAtualizada}
+      />
+
+      <ConfirmarExclusaoModal
+        open={deleteModalOpen}
+        onOpenChange={setDeleteModalOpen}
+        title="Excluir Compra"
+        description={`Tem certeza que deseja excluir esta compra de ${formatCurrency(selectedCompra?.valor_total || 0)}? Esta ação não poderá ser desfeita.`}
+        onConfirm={handleConfirmarExclusao}
       />
     </PageLayout>
   );

@@ -6,8 +6,10 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { PageLayout } from '@/components/layout/PageLayout';
 import { CadastroClienteModal } from '@/components/modals/CadastroClienteModal';
+import { EditarClienteModal } from '@/components/modals/EditarClienteModal';
+import { ConfirmarExclusaoModal } from '@/components/modals/ConfirmarExclusaoModal';
 import { formatDate } from '@/utils/formatters';
-import { UserPlus, Search, Users } from 'lucide-react';
+import { UserPlus, Search, Users, Edit, Trash2 } from 'lucide-react';
 import { clienteService } from '@/services/supabaseService';
 import type { SupabaseCliente } from '@/types/supabase';
 import { toast } from '@/hooks/use-toast';
@@ -15,6 +17,9 @@ import { toast } from '@/hooks/use-toast';
 export default function ListaClientes() {
   const [searchTerm, setSearchTerm] = useState('');
   const [modalOpen, setModalOpen] = useState(false);
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [selectedCliente, setSelectedCliente] = useState<SupabaseCliente | null>(null);
   const [clientes, setClientes] = useState<SupabaseCliente[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -68,6 +73,42 @@ export default function ListaClientes() {
 
   const handleClienteSalvo = (novoCliente: SupabaseCliente) => {
     setClientes(prev => [novoCliente, ...prev]);
+  };
+
+  const handleEditarCliente = (cliente: SupabaseCliente) => {
+    setSelectedCliente(cliente);
+    setEditModalOpen(true);
+  };
+
+  const handleExcluirCliente = (cliente: SupabaseCliente) => {
+    setSelectedCliente(cliente);
+    setDeleteModalOpen(true);
+  };
+
+  const handleClienteAtualizado = () => {
+    loadClientes();
+    setEditModalOpen(false);
+    setSelectedCliente(null);
+  };
+
+  const handleConfirmarExclusao = async () => {
+    if (!selectedCliente) return;
+
+    try {
+      await clienteService.delete(selectedCliente.id);
+      toast({
+        title: "Cliente excluído com sucesso ✅",
+        description: `${selectedCliente.nome} foi excluído com sucesso`,
+      });
+      loadClientes();
+    } catch (error: any) {
+      console.error('Erro ao excluir cliente:', error);
+      toast({
+        title: "Erro ao excluir cliente",
+        description: error.message || "Tente novamente em alguns instantes",
+        variant: "destructive",
+      });
+    }
   };
 
   if (isLoading) {
@@ -146,7 +187,7 @@ export default function ListaClientes() {
               <Card key={cliente.id} className="hover:shadow-md transition-shadow">
                 <CardContent className="p-6">
                   <div className="flex items-start justify-between">
-                    <div className="space-y-2">
+                    <div className="space-y-2 flex-1">
                       <div className="flex items-center gap-3">
                         <h3 className="text-lg font-semibold">{cliente.nome}</h3>
                         <Badge variant="secondary">Cliente</Badge>
@@ -159,6 +200,23 @@ export default function ListaClientes() {
                           <span className="font-medium">Telefone:</span> {cliente.telefone}
                         </div>
                       </div>
+                    </div>
+                    <div className="flex gap-2 ml-4">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleEditarCliente(cliente)}
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleExcluirCliente(cliente)}
+                        className="text-red-600 hover:text-red-700 hover:border-red-300"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
                     </div>
                   </div>
                 </CardContent>
@@ -178,6 +236,21 @@ export default function ListaClientes() {
         open={modalOpen}
         onOpenChange={setModalOpen}
         onClienteSalvo={handleClienteSalvo}
+      />
+
+      <EditarClienteModal
+        open={editModalOpen}
+        onOpenChange={setEditModalOpen}
+        cliente={selectedCliente}
+        onClienteAtualizado={handleClienteAtualizado}
+      />
+
+      <ConfirmarExclusaoModal
+        open={deleteModalOpen}
+        onOpenChange={setDeleteModalOpen}
+        title="Excluir Cliente"
+        description={`Tem certeza que deseja excluir o cliente "${selectedCliente?.nome}"? Esta ação não poderá ser desfeita.`}
+        onConfirm={handleConfirmarExclusao}
       />
     </PageLayout>
   );
