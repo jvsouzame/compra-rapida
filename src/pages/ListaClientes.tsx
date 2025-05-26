@@ -1,20 +1,20 @@
 
 import { useState, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { PageLayout } from '@/components/layout/PageLayout';
+import { CadastroClienteModal } from '@/components/modals/CadastroClienteModal';
 import { storage } from '@/utils/storage';
 import { formatDate } from '@/utils/formatters';
 import { UserPlus, Search, Users } from 'lucide-react';
+import { Cliente } from '@/types';
 
 export default function ListaClientes() {
-  const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
-  
-  const clientes = storage.getClientes();
+  const [modalOpen, setModalOpen] = useState(false);
+  const [clientes, setClientes] = useState<Cliente[]>(storage.getClientes());
 
   const filteredClientes = useMemo(() => {
     if (!searchTerm) return clientes;
@@ -27,12 +27,16 @@ export default function ListaClientes() {
     );
   }, [clientes, searchTerm]);
 
+  const handleClienteSalvo = (novoCliente: Cliente) => {
+    setClientes(storage.getClientes());
+  };
+
   return (
     <PageLayout 
       title="Lista de Clientes" 
       subtitle={`${clientes.length} cliente(s) cadastrado(s)`}
       action={
-        <Button onClick={() => navigate('/clientes/novo')}>
+        <Button onClick={() => setModalOpen(true)}>
           <UserPlus className="mr-2 h-4 w-4" />
           Novo Cliente
         </Button>
@@ -77,7 +81,7 @@ export default function ListaClientes() {
                 }
               </p>
               {!searchTerm && (
-                <Button onClick={() => navigate('/clientes/novo')}>
+                <Button onClick={() => setModalOpen(true)}>
                   <UserPlus className="mr-2 h-4 w-4" />
                   Cadastrar Primeiro Cliente
                 </Button>
@@ -120,6 +124,12 @@ export default function ListaClientes() {
           </div>
         )}
       </div>
+
+      <CadastroClienteModal
+        open={modalOpen}
+        onOpenChange={setModalOpen}
+        onClienteSalvo={handleClienteSalvo}
+      />
     </PageLayout>
   );
 }

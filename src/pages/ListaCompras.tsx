@@ -1,21 +1,23 @@
 
 import { useState, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { PageLayout } from '@/components/layout/PageLayout';
+import { CadastroCompraModal } from '@/components/modals/CadastroCompraModal';
 import { storage } from '@/utils/storage';
 import { formatCurrency, formatDate } from '@/utils/formatters';
 import { Plus, Search, ShoppingCart } from 'lucide-react';
+import { Compra } from '@/types';
 
 export default function ListaCompras() {
-  const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
-  
-  const compras = storage.getCompras().sort((a, b) => 
-    new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+  const [modalOpen, setModalOpen] = useState(false);
+  const [compras, setCompras] = useState<Compra[]>(
+    storage.getCompras().sort((a, b) => 
+      new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    )
   );
 
   const filteredCompras = useMemo(() => {
@@ -28,6 +30,12 @@ export default function ListaCompras() {
       formatCurrency(compra.valorTotal).toLowerCase().includes(term)
     );
   }, [compras, searchTerm]);
+
+  const handleCompraSalva = (novaCompra: Compra) => {
+    setCompras(storage.getCompras().sort((a, b) => 
+      new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    ));
+  };
 
   const getFormaPagamentoBadge = (forma: string) => {
     const variants: Record<string, { variant: "default" | "secondary" | "destructive" | "outline", label: string }> = {
@@ -44,7 +52,7 @@ export default function ListaCompras() {
       title="Lista de Compras" 
       subtitle={`${compras.length} compra(s) registrada(s)`}
       action={
-        <Button onClick={() => navigate('/compras/nova')}>
+        <Button onClick={() => setModalOpen(true)}>
           <Plus className="mr-2 h-4 w-4" />
           Nova Compra
         </Button>
@@ -89,7 +97,7 @@ export default function ListaCompras() {
                 }
               </p>
               {!searchTerm && (
-                <Button onClick={() => navigate('/compras/nova')}>
+                <Button onClick={() => setModalOpen(true)}>
                   <Plus className="mr-2 h-4 w-4" />
                   Registrar Primeira Compra
                 </Button>
@@ -138,6 +146,12 @@ export default function ListaCompras() {
           </div>
         )}
       </div>
+
+      <CadastroCompraModal
+        open={modalOpen}
+        onOpenChange={setModalOpen}
+        onCompraSalva={handleCompraSalva}
+      />
     </PageLayout>
   );
 }
