@@ -1,5 +1,5 @@
 
-import { Users, ShoppingCart, UserPlus, Plus, Home } from 'lucide-react';
+import { Users, ShoppingCart, Home } from 'lucide-react';
 import { useLocation } from 'react-router-dom';
 import {
   Sidebar,
@@ -20,19 +20,9 @@ const menuItems = [
     icon: Home,
   },
   {
-    title: 'Cadastrar Cliente',
-    url: '/clientes/novo',
-    icon: UserPlus,
-  },
-  {
     title: 'Lista de Clientes',
     url: '/clientes',
     icon: Users,
-  },
-  {
-    title: 'Nova Compra',
-    url: '/compras/nova',
-    icon: Plus,
   },
   {
     title: 'Lista de Compras',
