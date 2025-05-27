@@ -1,73 +1,69 @@
-# Welcome to your Lovable project
+# 🛒 Compra Rápida – Sistema de Cadastro de Clientes e Compras
 
-## Project info
+Este projeto foi desenvolvido como parte da disciplina **Hands-On Work VI** no curso de **Análise e Desenvolvimento de Sistemas** da **Universidade do Vale do Itajaí (Univali)**, integrando o projeto de extensão **Lite is Cool**.
 
-**URL**: https://lovable.dev/projects/dde04bc6-1f15-4d4f-98bf-7b6ff6ec6974
+O sistema foi criado com o objetivo de praticar a programação orientada a objetos, modelagem de dados relacionais e integração com banco de dados moderno. Ele simula a operação de pequenos comércios, permitindo o controle de clientes e o registro de compras.
 
-## How can I edit this code?
+---
 
-There are several ways of editing your application.
+## 📘 Tecnologias Utilizadas
 
-**Use Lovable**
+- **TypeScript + React + Vite** – Para construção do frontend moderno e escalável
+- **Tailwind CSS + shadcn/ui** – Para estilização responsiva e componentes reutilizáveis
+- **Supabase (PostgreSQL)** – Banco de dados com autenticação e persistência em tempo real
+- **SQL + PlantUML** – Para modelagem de entidades e consultas
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/dde04bc6-1f15-4d4f-98bf-7b6ff6ec6974) and start prompting.
+---
 
-Changes made via Lovable will be committed automatically to this repo.
+## 📌 Justificativa da Escolha por TypeScript
 
-**Use your preferred IDE**
+O projeto foi construído com **TypeScript** para aplicar conceitos de orientação a objetos de forma mais clara e segura. A escolha trouxe os seguintes benefícios:
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+1. **Aplicação direta de orientação a objetos** – uso de classes, interfaces e encapsulamento.
+2. **Código mais robusto e legível**, com tipagem estática e validação em tempo de desenvolvimento.
+3. **Prática com ferramentas modernas do mercado**, conectando teoria e prática de forma atualizada.
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+---
 
-Follow these steps:
+## 🧩 Funcionalidades Implementadas
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+### 📊 Dashboard
+- Total de Clientes
+- Total de Compras
+- Faturamento Total
+- Ticket Médio
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+### 👥 Clientes
+- Cadastro de novos clientes
+- Edição e exclusão de clientes
+- Busca por nome, CPF ou telefone
+- Visualização em tabela
 
-# Step 3: Install the necessary dependencies.
-npm i
+### 🛍Compras
+- Registro de nova compra vinculada a um cliente
+- Edição e exclusão de compras
+- Listagem com nome do cliente associado
+- Filtro por forma de pagamento e valor
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+---
+
+## 🧠 Modelagem
+
+- **Entidade Cliente:** id, nome, cpf, telefone
+- **Entidade Compra:** id, data, valor_total, forma_pagamento, cliente_id (FK)
+
+Relacionamento: **1 Cliente → N Compras**
+
+Modelagem realizada com base em diagramas de classe (UML) e modelo entidade-relacionamento (MER).
+
+---
+
+## 🧪 Teste Local
+
+Para executar o projeto localmente:
+
+```bash
+git clone <seu repositório>
+cd <seu projeto>
+npm install
 npm run dev
-```
-
-**Edit a file directly in GitHub**
-
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
-
-**Use GitHub Codespaces**
-
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
-
-## What technologies are used for this project?
-
-This project is built with:
-
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/dde04bc6-1f15-4d4f-98bf-7b6ff6ec6974) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
