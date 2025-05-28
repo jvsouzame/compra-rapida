@@ -7,8 +7,6 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/layout/AppSidebar";
 import ListaClientes from "./pages/ListaClientes";
-import CadastroCliente from "./pages/CadastroCliente";
-import CadastroCompra from "./pages/CadastroCompra";
 import ListaCompras from "./pages/ListaCompras";
 import NotFound from "./pages/NotFound";
 
@@ -31,9 +29,7 @@ const App = () => (
               </div>
               <Routes>
                 <Route path="/" element={<Navigate to="/clientes" replace />} />
-                <Route path="/clientes/novo" element={<CadastroCliente />} />
                 <Route path="/clientes" element={<ListaClientes />} />
-                <Route path="/compras/nova" element={<CadastroCompra />} />
                 <Route path="/compras" element={<ListaCompras />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
