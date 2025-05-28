@@ -3,12 +3,11 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/layout/AppSidebar";
-import Dashboard from "./pages/Dashboard";
-import CadastroCliente from "./pages/CadastroCliente";
 import ListaClientes from "./pages/ListaClientes";
+import CadastroCliente from "./pages/CadastroCliente";
 import CadastroCompra from "./pages/CadastroCompra";
 import ListaCompras from "./pages/ListaCompras";
 import NotFound from "./pages/NotFound";
@@ -31,7 +30,7 @@ const App = () => (
                 </div>
               </div>
               <Routes>
-                <Route path="/" element={<Dashboard />} />
+                <Route path="/" element={<Navigate to="/clientes" replace />} />
                 <Route path="/clientes/novo" element={<CadastroCliente />} />
                 <Route path="/clientes" element={<ListaClientes />} />
                 <Route path="/compras/nova" element={<CadastroCompra />} />

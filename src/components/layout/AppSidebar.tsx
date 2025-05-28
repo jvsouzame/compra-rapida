@@ -1,5 +1,5 @@
 
-import { Users, ShoppingCart, Home } from 'lucide-react';
+import { Users, ShoppingCart } from 'lucide-react';
 import { useLocation } from 'react-router-dom';
 import {
   Sidebar,
@@ -14,11 +14,6 @@ import {
 } from '@/components/ui/sidebar';
 
 const menuItems = [
-  {
-    title: 'Dashboard',
-    url: '/',
-    icon: Home,
-  },
   {
     title: 'Lista de Clientes',
     url: '/clientes',
