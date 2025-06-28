@@ -27,12 +27,6 @@ O projeto foi construído com **TypeScript** para aplicar conceitos de orientaç
 
 ## 🧩 Funcionalidades Implementadas
 
-### 📊 Dashboard
-- Total de Clientes
-- Total de Compras
-- Faturamento Total
-- Ticket Médio
-
 ### 👥 Clientes
 - Cadastro de novos clientes
 - Edição e exclusão de clientes
